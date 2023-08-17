@@ -1,0 +1,121 @@
+﻿@model IndexModel;
+@{
+    ViewData["Title"] = "Home Page";
+    var products = Model.Products;
+}
+
+<div class="text-center">
+    <table>
+        <tr>
+            <th>Название</th>
+            <th>Описание</th>
+            <th>Цена</th>
+            <th>Действия</th>
+        </tr>
+        @for (int i = 0; i < products.Count; i++)
+        {
+            <tr>
+                <td><div id="name_text_@i">@products[i].Name</div></td>
+                <td><div id="description_text_@i">@products[i].Description</div></td>
+                <td><div id="price_text_@i">@products[i].Price</div></td>
+                <td>
+                    <button id="edit_button_@i" onclick="onEditClick(@i)">✎</button>
+                    <button onclick="onRefreshClick(@i)">⟳</button>
+                </td>
+            </tr>
+        }
+    </table>
+    <h3>Product:</h3>
+    <form action="@Url.Action("CreateProduct", "Home")" method="Post">
+        Name:<br/>
+        <input type="text" placeholder="Введите название" name="name" value=""/><br/>
+        Decription:<br/>
+        <input type="text" placeholder="Введите описание" name="description" value=""/><br/>
+        Price:<br />
+        <input type="number" name="price" value=""/><br/>
+        <input type="submit" value="Create"/><br/>
+    </form>
+</div>
+<script>
+    async function onRefreshClick(i) {
+        let response = await fetch(`product/${i}`);
+        let product = await response.json();
+        
+        setProduct(i,  product);
+    }
+
+    function onEditClick(i) {
+        createInput(i, "name");
+        createInput(i, "description");
+        createInput(i, "price");
+        
+        let editButton = document.getElementById(`edit_button_${i}`);
+        
+        let sendButton = document.createElement("button");
+        sendButton.id = `send_button_${i}`;
+        sendButton.innerText = "✓";
+        sendButton.onclick = () => { onSendUpdateClick(i); }
+        
+        editButton.replaceWith(sendButton);
+    }
+    
+    function createInput(i, elementName) {
+        let elementText = document.getElementById(`${elementName}_text_${i}`);
+        let elementInput = document.createElement("input");
+        elementInput.id = `${elementName}_input_${i}`;
+        elementInput.value = elementText.innerText;
+        elementText.innerHTML = "";
+        elementText.appendChild(elementInput);
+    }
+    
+    async function onSendUpdateClick(id) {
+        let updatedProduct = getProduct(id);
+        let response = await fetch(`product/${id}`, {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(updatedProduct)
+        });
+        let updatedProductFromServer = await response.json();
+        
+        setProduct(id, updatedProductFromServer);
+        
+        let sendButton = document.getElementById(`send_button_${id}`);
+        
+        let editButton = document.createElement("button");
+        editButton.id = `edit_button_${id}`;
+        editButton.innerText = "✎";
+        editButton.onclick = () => { onEditClick(id); }
+        
+        sendButton.replaceWith(editButton);
+    }
+    
+    function setProduct(id, product) {
+        let nameText = document.getElementById(`name_text_${id}`);
+        nameText.innerText = product.name;
+        
+        let descriptionText = document.getElementById(`description_text_${id}`);
+        descriptionText.innerText = product.description;
+        
+        let priceText = document.getElementById(`price_text_${id}`);
+        priceText.innerText = product.price;
+    }
+    
+    function getProduct(id) {
+        let nameInput = document.getElementById(`name_input_${id}`);
+        let name = nameInput.value;
+        
+        let descriptionInput = document.getElementById(`description_input_${id}`);
+        let description = descriptionInput.value;
+        
+        let priceInput = document.getElementById(`price_input_${id}`);
+        let price = priceInput.value;
+                
+        return {
+            name, 
+            description,
+            price
+        };
+    }
+</script>
